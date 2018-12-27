@@ -19,26 +19,15 @@ set -e
 
 ENVNAME=env
 
-###########
-# CLEANUP #
-###########
-if [ -d "$ENVNAME" ]; then
-	echo "$ENVNAME already exists"
-	read -p "Remove $ENVNAME and start from scratch? [y/N] " -n 1 -r
-	echo "" # move to new line
-	if [[ $REPLY =~ ^[Yy]$ ]]; then
-		echo "Removing ..."
-		rm -r $ENVNAME
-	else
-		echo "Aborting..."
-		exit
-	fi
-fi
-
 ###############
 # ENVIRONMENT #
 ###############
-python3 -m venv $ENVNAME
+if [ -d "$ENVNAME" ]; then
+	echo "$ENVNAME already exists"
+else
+	python3 -m venv $ENVNAME
+fi
+
 
 ###########
 # INSTALL #
