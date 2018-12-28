@@ -5,7 +5,7 @@
 
 # source: https://unix.stackexchange.com/questions/35282/convert-ogv-video-to-gif-animation
 
-INPUT=in-action.ogv
+INPUT=in-action.mp4
 OUTPUT=in-action.gif
 TMP=output_tmp
 

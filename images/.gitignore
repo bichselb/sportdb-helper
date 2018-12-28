@@ -1,2 +1,5 @@
 /*.ogv
 /output_tmp
+/*.mp4
+/project
+!/in-action.mp4
