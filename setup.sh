@@ -17,6 +17,9 @@
 # Any subsequent commands which fail will cause the shell script to exit immediately
 set -e
 
+BASEDIR="$( dirname "$0")"
+cd "$BASEDIR"
+
 ENVNAME=env
 
 ###############

@@ -1,9 +1,14 @@
-from selenium import webdriver
-import pandas as pd
+import sys
+import time
 import datetime
 import re
 import argparse
-import sys
+
+from selenium import webdriver
+import pandas as pd
+from selenium.webdriver.common.desired_capabilities import DesiredCapabilities
+from urllib3.exceptions import MaxRetryError
+
 
 
 # UTILS
@@ -39,10 +44,16 @@ class DataInserter:
 
     def __init__(self, data):
         self.data = data
+        self.driver = None
 
     def navigate_to_page(self):
         sport_db_url = 'https://www.sportdb.ch'
-        self.driver = webdriver.Firefox()
+        try:
+            self.driver = webdriver.Remote("http://localhost:4444/wd/hub", DesiredCapabilities.FIREFOX)
+            print('Successfully opened sportdb')
+        except MaxRetryError:
+            print('Standalone docker image is not running. Trying to run firefox locally...')
+            self.driver = webdriver.Firefox()
         self.driver.get(sport_db_url)
 
     def login(self, username, password):
@@ -106,7 +117,8 @@ class DataInserter:
             return False
 
     def __del__(self):
-        self.driver.close()
+        if self.driver is not None:
+            self.driver.close()
 
 
 def run(data_file, username, password, course_id):
@@ -116,6 +128,9 @@ def run(data_file, username, password, course_id):
     # navigate
     ins = DataInserter(data)
     ins.navigate_to_page()
+    input("""We recommend you watch the progress of sportDB Helper by running
+$ vncviewer 127.0.0.1:5901
+Press enter to continue...""")
     ins.login(username, password)
     ins.to_awk(course_id)
 
