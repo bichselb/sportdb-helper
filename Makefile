@@ -24,8 +24,3 @@ run: image
 		--entrypoint "/bin/bash" \
 		-it \
 		$(IMAGE)
-
-
-.PHONY: vnc
-vnc:
-	vncviewer 127.0.0.1:5901
