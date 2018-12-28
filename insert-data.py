@@ -1,4 +1,3 @@
-import sys
 import time
 import datetime
 import re
@@ -8,7 +7,7 @@ from selenium import webdriver
 import pandas as pd
 from selenium.webdriver.common.desired_capabilities import DesiredCapabilities
 from urllib3.exceptions import MaxRetryError
-
+from selenium.common.exceptions import WebDriverException
 
 
 # UTILS
@@ -45,15 +44,28 @@ class DataInserter:
     def __init__(self, data):
         self.data = data
         self.driver = None
+        self.max_tries = 10
 
     def navigate_to_page(self):
         sport_db_url = 'https://www.sportdb.ch'
         try:
-            self.driver = webdriver.Remote("http://localhost:4444/wd/hub", DesiredCapabilities.FIREFOX)
-            print('Successfully opened sportdb')
-        except MaxRetryError:
-            print('Standalone docker image is not running. Trying to run firefox locally...')
             self.driver = webdriver.Firefox()
+        except WebDriverException:
+            print('Could not run firefox locally. Switching to remote option.')
+
+            n_tries = 0
+            while self.driver is None:
+                try:
+                    self.driver = webdriver.Remote("http://localhost:4444/wd/hub", DesiredCapabilities.FIREFOX)
+                    print('Successfully opened sportdb')
+                except MaxRetryError:
+                    n_tries += 1
+                    print('Remote webdriver is not running yet ({}/{})...'.format(n_tries, self.max_tries))
+                    if n_tries >= self.max_tries:
+                        raise Exception('Remote webdriver does not seem to be running...')
+                    else:
+                        time.sleep(2)
+
         self.driver.get(sport_db_url)
 
     def login(self, username, password):
@@ -128,9 +140,6 @@ def run(data_file, username, password, course_id):
     # navigate
     ins = DataInserter(data)
     ins.navigate_to_page()
-    input("""We recommend you watch the progress of sportDB Helper by running
-$ vncviewer 127.0.0.1:5901
-Press enter to continue...""")
     ins.login(username, password)
     ins.to_awk(course_id)
 

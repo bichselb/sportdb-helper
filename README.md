@@ -10,7 +10,7 @@ Das wöchentliche führen der Anwesenheitskontrolle ist äusserst mühsam:
 
 ## Lösung
 
-SportDB Helper startet von einem Excelfile, dass die J+S-ID und wöchentliche Anwesenheit
+SportDB Helper startet von einem Excelfile, dass die J+S-ID und die wöchentliche Anwesenheit
 aller Teilnehmer enthält (als Referenz, siehe [./data/reference.xls](./data/reference.xls)).
 
 Aufgrund dieser Daten füllt SportDB Helper automatisch die Anwesenheitskontrolle aus.
@@ -19,24 +19,20 @@ Aufgrund dieser Daten füllt SportDB Helper automatisch die Anwesenheitskontroll
 
 ## Verwendung
 
-### Anforderungen
+### Installation
 
-Die folgenden Anforderungen sind für Ubuntu erklärt. Andere Systeme sollten analog verwendbar sein (nicht getestet).
+Die folgende Installationsanleitung ist für Ubuntu gedacht. Andere Systeme sollten analog verwendbar sein (nicht getestet, Anpassung braucht Erfahrung).
 
 Um SportDB Helfer zu verwenden, brauchst du [docker](https://docs.docker.com/install/), `git` und `make`:
 
-- Um `git` und `make` installieren:
+- Um `git` und `make` zu installieren:
 ```
 # for git
 sudo apt-get install git-all
 # for make
 sudo apt-get install build-essential
-# vnc client
-sudo apt-get install tigervnc-viewer
 
 ```
-
-
 
 - Docker auf Ubuntu installieren: https://docs.docker.com/install/linux/docker-ce/ubuntu/.
 
@@ -45,6 +41,18 @@ sudo apt-get install tigervnc-viewer
 ```
 git clone git@github.com:bichselb/sportdb-helper.git
 cd sportdb-helper
+```
+
+- Installation von SportDP Helper:
+
+```
+make image
+```
+
+- (Optional) Cleanup nach Verwendung
+
+```
+make clean
 ```
 
 ### SportDB Helper
