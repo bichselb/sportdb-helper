@@ -13,7 +13,7 @@ Das wöchentliche führen der Anwesenheitskontrolle ist äusserst mühsam:
 SportDB Helper startet von einem Excelfile, dass die J+S-ID und die wöchentliche Anwesenheit
 aller Teilnehmer enthält (als Referenz, siehe [./data/reference.xls](./data/reference.xls)).
 
-Aufgrund dieser Daten füllt SportDB Helper automatisch die Anwesenheitskontrolle aus ([Video in besserer Auflösung](images/in-action.mp4)).
+Aufgrund dieser Daten füllt SportDB Helper automatisch die Anwesenheitskontrolle aus ([Video in besserer Auflösung](images/in-action.mp4?raw=true)).
 
 ![](images/in-action.gif)
 
