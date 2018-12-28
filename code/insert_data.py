@@ -213,6 +213,8 @@ def run(data_file, username, password, course_id, disable_all):
         more = ins.to_previous()
         if not more:
             break
+    
+    logger.info("Einträge vollständig. Keine Garantie für Korrektheit, bitte Daten überprüfen. Vergiss nicht, den Kurs noch abzuschliessen.")
 
 
 if __name__ == "__main__":
