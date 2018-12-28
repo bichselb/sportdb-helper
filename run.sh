@@ -4,6 +4,8 @@
 # PURPOSE #
 ###########
 # Convenient wrapper for running SportDP Helper
+# For a list of possible arguments, run
+# $ ./run.sh --help
 
 BASEDIR="$( dirname "$0")"
 

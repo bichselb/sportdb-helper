@@ -60,10 +60,10 @@ make clean
 Um SportDB Helper laufen zu lassen:
 
 ```
-./run --username "js-123456" --password "ABC" --course-id 1234567 --data-file ./data/attendance.xls
+./run.sh --username "js-123456" --password "ABC" --course-id 1234567 ./data/attendance.xls
 ```
 
 Für mehr Details zur Verwendung von SportDP Helper:
 ```
-./run sportdb-helper --help
+./run.sh --help
 ```
