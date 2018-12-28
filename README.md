@@ -43,13 +43,13 @@ git clone git@github.com:bichselb/sportdb-helper.git
 cd sportdb-helper
 ```
 
-- Installation von SportDP Helper:
+- Installation von SportDP Helper (fragt nach dem Passwort für die Interaktion mit docker):
 
 ```
 make image
 ```
 
-- (Optional) Cleanup nach Verwendung
+- (Optional) Cleanup nach Verwendung (fragt nach dem Passwort für die Interaktion mit docker):
 
 ```
 make clean
@@ -57,7 +57,7 @@ make clean
 
 ### SportDB Helper
 
-Um SportDB Helper laufen zu lassen:
+Um SportDB Helper laufen zu lassen (fragt nach dem Passwort für die Interaktion mit docker):
 
 ```
 ./run.sh --username "js-123456" --password "ABC" --course-id 1234567 ./data/attendance.xls
