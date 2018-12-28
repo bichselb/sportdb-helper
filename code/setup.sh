@@ -26,7 +26,7 @@ ENVNAME=env
 # ENVIRONMENT #
 ###############
 if [ -d "$ENVNAME" ]; then
-	echo "$ENVNAME already exists"
+	echo "$ENVNAME already exists..."
 else
 	python3 -m venv $ENVNAME
 fi

@@ -20,4 +20,4 @@ RUN echo "/opt/bin/entry_point.sh > /home/seluser/logs/$(date +%Y-%m-%d_%H-%M-%S
 
 WORKDIR "/sportdb-helper"
 COPY --chown=seluser . .
-ENTRYPOINT ["python3", "./insert-data.py"]
+ENTRYPOINT ["python3", "./code/insert_data.py"]

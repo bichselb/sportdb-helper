@@ -12,22 +12,7 @@ from selenium.common.exceptions import WebDriverException
 
 # UTILS
 
-def get_week_difference(d1, d2):
-    monday1 = (d1 - datetime.timedelta(days=d1.weekday()))
-    monday2 = (d2 - datetime.timedelta(days=d2.weekday()))
-
-    return int((monday2 - monday1).days / 7)
-
-
-# allow computation of the week id
-epoch = datetime.datetime(1980, 1, 6)
-specific_week_difference = get_week_difference(epoch, datetime.datetime(2018, 1, 22))
-off_by = 43328566 - specific_week_difference
-
-
-def get_week_id(d):
-    return get_week_difference(epoch, d) + off_by
-
+date_regex = re.compile("^[0-9]+\.[0-9]+\.[0-9]+$")
 
 # PARSE DATA
 
@@ -92,37 +77,59 @@ class DataInserter:
         if 'Error' in self.driver.title:
             raise Exception('Something went wrong. Most likely, you entered the wrong course id.')
 
-    def insert_attendance(self, date,  js_id, name, attended):
-        week_id = get_week_id(date)
-        xpath = ".//*[@name='kursAktivitaetTeilnehmerMap({})']".format(week_id)
-        boxes = self.driver.find_elements_by_xpath(xpath)
-        for box in boxes:
-            value = box.get_property("value")
-            pattern = re.compile("^I-{}\\|[0-9]+$".format(js_id))
-            if pattern.match(value):
-                if attended and not box.is_selected():
-                    print('{} attended on {}'.format(name, date))
-                    box.click()
-                if not attended and box.is_selected():
-                    print('{} did not attend on {}'.format(name, date))
-                    box.click()
+    @staticmethod
+    def set_attendance(attended, box, name, date):
+
+        if attended and not box.is_selected():
+            print('{} attended on {}'.format(name, date))
+            box.click()
+            return True
+        if not attended and box.is_selected():
+            print('{} did not attend on {}'.format(name, date))
+            box.click()
+            return True
+
+        return False
 
     def enter_data(self):
+        changed = False
+
+        # match ids and days
+        days = self.driver.find_elements_by_xpath(".//*[contains(@class, 'awkDay')]//span")
+        days = [d.text for d in days if date_regex.match(d.text)]
+        day_ids = self.driver.find_elements_by_xpath(".//*[contains(@class, 'select-all leiter')]")
+        day_ids = [d.get_attribute('name') for d in day_ids]
+        assert(len(days) == len(day_ids))
+        day_to_id = {day: day_id for day, day_id in zip(days, day_ids)}
+        print('Found days:', day_to_id)
+
+        # enter data
         for column in self.data:
-            date = column.to_pydatetime()
+            date = column.to_pydatetime().strftime('%d.%m.%Y')
             for key, val in self.data[column].iteritems():
                 js_id = key[0]
                 name = key[2]
                 attended = val == 'x'
-                self.insert_attendance(date, js_id, name, attended)
 
-        save = self.driver.find_element_by_id('formSave')
-        save.click()
+                if date in day_to_id:
+                    day_id = day_to_id[date]
+                    box = self.driver.find_element_by_xpath(
+                        ".//input[contains(@name, 'kursAktivitaetTeilnehmerMap({})')][contains(@name, 'I-{}')]"
+                        .format(day_id, js_id)
+                    )
+                    changed = changed or self.set_attendance(attended, box, name, date)
+
+        # save
+        if changed:
+            save = self.driver.find_element_by_id('formSave')
+            save.click()
 
     def to_previous(self):
         previous = self.driver.find_element_by_id('previousLink')
         c = previous.get_attribute("class")
         if 'disabled' not in c:
+            # reload to prevent stale elements (a bit of a hack)
+            previous = self.driver.find_element_by_id('previousLink')
             previous.click()
             return True
         else:
@@ -130,6 +137,8 @@ class DataInserter:
 
     def __del__(self):
         if self.driver is not None:
+            logout = self.driver.find_element_by_id('logout')
+            logout.click()
             self.driver.close()
 
 
@@ -145,7 +154,9 @@ def run(data_file, username, password, course_id):
 
     # enter data
     while True:
+        print('Entering data...')
         ins.enter_data()
+        print('Entered data. Going to previous page...')
         more = ins.to_previous()
         if not more:
             break
@@ -159,7 +170,7 @@ if __name__ == "__main__":
                         type=str, default=None,
                         help='Passwort für sportdb (default: interaktive Eingabe)')
     parser.add_argument('--course-id', dest='course_id', action='store', default=None, type=str,
-                        help='Kurs ID (z.B. 1234567). Wenn nicht angegeben, wirst du interaktiv angefragt, zur korrekten Anwesenheitskontrolle zu navigieren.')
+                        help='Kurs ID (z.B. 1234567). Kann aus der URL der Anwesenheitskontrolle abgelesen werden. Wenn nicht angegeben, wirst du interaktiv angefragt, zur korrekten Anwesenheitskontrolle zu navigieren.')
     parser.add_argument('--data-file', dest='data_file', action='store',
                         type=str, default='data/attendance.xls',
                         help='File mit Daten. Siehe data/reference.xls für ein Referenzfile')
