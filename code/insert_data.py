@@ -2,6 +2,7 @@ import time
 import datetime
 import re
 import argparse
+from mylogging import logger
 
 from selenium import webdriver
 import pandas as pd
@@ -13,6 +14,7 @@ from selenium.common.exceptions import WebDriverException
 # UTILS
 
 date_regex = re.compile("^[0-9]+\.[0-9]+\.[0-9]+$")
+
 
 # PARSE DATA
 
@@ -26,34 +28,41 @@ def parse_data(file):
 
 class DataInserter:
 
-    def __init__(self, data):
+    def __init__(self, data, disable_all=False, max_tries=10):
         self.data = data
         self.driver = None
-        self.max_tries = 10
+        self.max_tries = max_tries
+        self.disable_all = disable_all
+        self.logged_in = False
 
     def navigate_to_page(self):
         sport_db_url = 'https://www.sportdb.ch'
+
+        logger.debug('Navigating to %s', sport_db_url)
+
         try:
             self.driver = webdriver.Firefox()
         except WebDriverException:
-            print('Could not run firefox locally. Switching to remote option.')
+            logger.info('Could not run firefox locally. Switching to remote option.')
 
             n_tries = 0
             while self.driver is None:
                 try:
                     self.driver = webdriver.Remote("http://localhost:4444/wd/hub", DesiredCapabilities.FIREFOX)
-                    print('Successfully opened sportdb')
+                    logger.info('Successfully opened sportdb')
                 except MaxRetryError:
                     n_tries += 1
-                    print('Remote webdriver is not running yet ({}/{})...'.format(n_tries, self.max_tries))
+                    logger.warning('Remote webdriver is not running yet ({}/{})...'.format(n_tries, self.max_tries))
                     if n_tries >= self.max_tries:
                         raise Exception('Remote webdriver does not seem to be running...')
                     else:
                         time.sleep(2)
 
         self.driver.get(sport_db_url)
+        logger.debug('Navigated to %s', sport_db_url)
 
     def login(self, username, password):
+        logger.debug('Filling out login form...')
         username_field = self.driver.find_element_by_id('j_username')
         username_field.clear()
         username_field.send_keys(username)
@@ -62,101 +71,145 @@ class DataInserter:
         username_field.clear()
         username_field.send_keys(password)
 
+        logger.debug('Clicking login button')
         login = self.driver.find_element_by_id('ButtonLogin')
         login.click()
+
+        self.logged_in = True
+        logger.debug('Clicked login button')
 
         src = self.driver.page_source
         if 'Bitte überprüfen Sie Benutzername und Passwort' in src or 'Bitte Benutzername und Passwort angeben' in src:
             raise Exception('Something went wrong. Most likely, you provided the wrong username or password')
 
     def to_awk(self, course_id):
+        logger.debug('Browsing to AWK with course id %s...', course_id)
         if course_id is None:
+            logger.debug('Mode: manual')
             input('No course_id provided. Manually navigate to "Anwesenheitskontrolle" for your course.')
         else:
+            logger.debug('Mode: automatic')
             self.driver.get('https://www.sportdb.ch/extranet/kurs/kursEditAwk.do?kursId={}'.format(course_id))
+
+            logger.debug('Waiting a bit for page to fully load')
+            time.sleep(1)
+
         if 'Error' in self.driver.title:
             raise Exception('Something went wrong. Most likely, you entered the wrong course id.')
+        logger.debug('Browsed to AWK...')
 
-    @staticmethod
-    def set_attendance(attended, box, name, date):
-
+    def set_attendance(self, attended, box, name, date):
+        if attended:
+            logger.debug("Attended")
+        attended = attended and not self.disable_all
+        logger.debug('Setting attendance for %s on %s', name, date)
         if attended and not box.is_selected():
-            print('{} attended on {}'.format(name, date))
+            logger.debug('{} attended on {}'.format(name, date))
             box.click()
             return True
-        if not attended and box.is_selected():
-            print('{} did not attend on {}'.format(name, date))
+        elif not attended and box.is_selected():
+            logger.debug('{} did not attend on {}'.format(name, date))
             box.click()
             return True
+        elif attended and box.is_selected():
+            logger.debug('{} attended on {} (already entered)'.format(name, date))
+        elif not attended and not box.is_selected():
+            logger.debug('{} did not attend on {} (already entered)'.format(name, date))
+        else:
+            logger.error('Program error')
+            assert False
 
         return False
 
     def enter_data(self):
-        changed = False
+        any_changed = False
 
         # match ids and days
+        logger.debug('Determining days on the current page')
         days = self.driver.find_elements_by_xpath(".//*[contains(@class, 'awkDay')]//span")
         days = [d.text for d in days if date_regex.match(d.text)]
+        logger.debug('Determining day ids on the current page')
         day_ids = self.driver.find_elements_by_xpath(".//*[contains(@class, 'select-all leiter')]")
         day_ids = [d.get_attribute('name') for d in day_ids]
+        logger.debug("Asserting length of results matches: \t\n%s, \t\n%s", days, day_ids)
         assert(len(days) == len(day_ids))
         day_to_id = {day: day_id for day, day_id in zip(days, day_ids)}
-        print('Found days:', day_to_id)
+        logger.debug('Found days: %s', day_to_id)
 
         # enter data
+        logger.debug('Entering data...')
         for column in self.data:
             date = column.to_pydatetime().strftime('%d.%m.%Y')
             for key, val in self.data[column].iteritems():
                 js_id = key[0]
-                name = key[2]
+                last_name = key[1]
+                first_name = key[2]
+                name = first_name + ' ' + last_name
+
                 attended = val == 'x'
 
                 if date in day_to_id:
                     day_id = day_to_id[date]
-                    box = self.driver.find_element_by_xpath(
-                        ".//input[contains(@name, 'kursAktivitaetTeilnehmerMap({})')][contains(@name, 'I-{}')]"
+                    path = ".//input[contains(@name, 'kursAktivitaetTeilnehmerMap({})')][contains(@value, 'I-{}')]"\
                         .format(day_id, js_id)
-                    )
-                    changed = changed or self.set_attendance(attended, box, name, date)
+                    logger.debug('Locating checkbox for %s (%s) on %s by path %s', name, js_id, date, path)
+                    box = self.driver.find_element_by_xpath(path)
+                    logger.debug('Filling out checkbox')
+                    changed = self.set_attendance(attended, box, name, date)
+                    any_changed = any_changed or changed
+                    logger.debug('Filled out checkbox')
+
+        logger.debug('Wait a bit for page to process changes')
+        time.sleep(1)
 
         # save
-        if changed:
+        if any_changed:
+            logger.debug('Saving data...')
             save = self.driver.find_element_by_id('formSave')
             save.click()
+            logger.debug('Saved data')
+        else:
+            logger.debug('Not saving, since there were no changes.')
 
     def to_previous(self):
         previous = self.driver.find_element_by_id('previousLink')
         c = previous.get_attribute("class")
         if 'disabled' not in c:
-            # reload to prevent stale elements (a bit of a hack)
-            previous = self.driver.find_element_by_id('previousLink')
             previous.click()
+
+            logger.debug('Waiting a bit for page to fully load')
+            time.sleep(1)
+
             return True
         else:
             return False
 
     def __del__(self):
-        if self.driver is not None:
+        if self.logged_in:
+            logger.debug('Logging out...')
             logout = self.driver.find_element_by_id('logout')
             logout.click()
+            logger.debug('Closing driver...')
             self.driver.close()
 
 
-def run(data_file, username, password, course_id):
+def run(data_file, username, password, course_id, disable_all):
+    logger.debug("Running...")
+
     # parse data
     data = parse_data(data_file)
 
     # navigate
-    ins = DataInserter(data)
+    ins = DataInserter(data, disable_all)
     ins.navigate_to_page()
     ins.login(username, password)
     ins.to_awk(course_id)
 
     # enter data
     while True:
-        print('Entering data...')
+        logger.info('Entering data...')
         ins.enter_data()
-        print('Entered data. Going to previous page...')
+        logger.info('Entered data. Going to previous page...')
         more = ins.to_previous()
         if not more:
             break
@@ -164,6 +217,8 @@ def run(data_file, username, password, course_id):
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description='Eintragehilfe für Anwesenheitskontrolle bei sportdb')
+    parser.add_argument('data_file', action='store', type=str,
+                        help='File mit Daten. Siehe data/reference.xls für ein Referenzfile (letztes Argument)')
     parser.add_argument('--username', dest='username', action='store',
                         type=str, help='Username für sportdb (z.B. js-123456)', required=True)
     parser.add_argument('--password', dest='password', action='store',
@@ -171,9 +226,8 @@ if __name__ == "__main__":
                         help='Passwort für sportdb (default: interaktive Eingabe)')
     parser.add_argument('--course-id', dest='course_id', action='store', default=None, type=str,
                         help='Kurs ID (z.B. 1234567). Kann aus der URL der Anwesenheitskontrolle abgelesen werden. Wenn nicht angegeben, wirst du interaktiv angefragt, zur korrekten Anwesenheitskontrolle zu navigieren.')
-    parser.add_argument('--data-file', dest='data_file', action='store',
-                        type=str, default='data/attendance.xls',
-                        help='File mit Daten. Siehe data/reference.xls für ein Referenzfile')
+    parser.add_argument('--disable-all', dest='disable_all', action='store_true', default=False,
+                        help='Deaktiviere die Anwesenheit für alle Personen und Daten im File.')
     args = parser.parse_args()
 
     if args.password is None:
@@ -181,6 +235,6 @@ if __name__ == "__main__":
     else:
         password = args.password
 
-    run(args.data_file, args.username, password, args.course_id)
+    run(args.data_file, args.username, password, args.course_id, args.disable_all)
 
 

@@ -1,2 +1,3 @@
-/*.log
 /env
+/my-run.sh
+/__pycache__
