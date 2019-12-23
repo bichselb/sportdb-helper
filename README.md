@@ -38,20 +38,20 @@ sudo apt-get install build-essential
 
 - Herunterladen von SportDB Helper:
 
-```
+```bash
 git clone git@github.com:bichselb/sportdb-helper.git
 cd sportdb-helper
 ```
 
 - Installation von SportDP Helper (fragt nach dem Passwort für die Interaktion mit docker):
 
-```
+```bash
 make image
 ```
 
 - (Optional) Cleanup nach Verwendung (fragt nach dem Passwort für die Interaktion mit docker):
 
-```
+```bash
 make clean
 ```
 
@@ -59,11 +59,17 @@ make clean
 
 Um SportDB Helper laufen zu lassen (fragt nach dem Passwort für die Interaktion mit docker):
 
-```
+```bash
 ./run.sh --username "js-123456" --password "ABC" --course-id 1234567 ./data/attendance.xls
 ```
 
+ACHTUNG: Die `course-id` ist nicht dasselbe wie die "Angebot"-Nummer. Die
+`course-id` findest du, wenn du in der URL deines Kurses, z.B.:
+
+- https://www.sportdb.ch/extranet/kurs/kursEdit.do?kursId=1234567&org.apache.struts.taglib.html.TOKEN=0000000000000000000000000
+
 Für mehr Details zur Verwendung von SportDP Helper:
-```
+
+```bash
 ./run.sh --help
 ```
