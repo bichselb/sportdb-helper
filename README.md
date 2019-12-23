@@ -61,12 +61,15 @@ Um SportDB Helper laufen zu lassen (fragt nach dem Passwort für die Interaktion
 
 ```bash
 ./run.sh --username "js-123456" --password "ABC" --course-id 1234567 ./data/attendance.xls
+# NICHT VERGESSEN: Eingegebene Daten prüfen und Kurs manuell abschliessen
 ```
 
 ACHTUNG: Die `course-id` ist nicht dasselbe wie die "Angebot"-Nummer. Die
 `course-id` findest du, wenn du in der URL deines Kurses, z.B.:
 
 - https://www.sportdb.ch/extranet/kurs/kursEdit.do?kursId=1234567&org.apache.struts.taglib.html.TOKEN=0000000000000000000000000
+
+### Details
 
 Für mehr Details zur Verwendung von SportDP Helper:
 
