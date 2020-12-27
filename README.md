@@ -6,16 +6,16 @@ Helferscript für die Anwesenheitskontrolle auf https://www.sportdb.ch.
 
 Das wöchentliche führen der Anwesenheitskontrolle ist äusserst mühsam:
 
-![](images/empty-form.png)
+![](demo/empty-form.png)
 
 ## Lösung
 
 SportDB Helper startet von einem Excelfile, dass die J+S-ID und die wöchentliche Anwesenheit
 aller Teilnehmer enthält (als Referenz, siehe [./data/reference.xls](./data/reference.xls?raw=true)).
 
-Aufgrund dieser Daten füllt SportDB Helper automatisch die Anwesenheitskontrolle aus ([Video in besserer Auflösung](images/in-action.mp4?raw=true)).
+Aufgrund dieser Daten füllt SportDB Helper automatisch die Anwesenheitskontrolle aus ([Video in besserer Auflösung](demo/in-action.mp4?raw=true)).
 
-![](images/in-action.gif)
+![](demo/in-action.gif)
 
 ## Verwendung
 
