@@ -42,8 +42,8 @@ class DataInserter:
 
         try:
             self.driver = webdriver.Firefox()
-        except WebDriverException:
-            logger.info('Could not run firefox locally. Switching to remote option.')
+        except WebDriverException as e:
+            logger.info('Could not run firefox locally. Switching to remote option. Error message: ' + str(e))
 
             n_tries = 0
             while self.driver is None:
