@@ -28,36 +28,36 @@ def parse_data(file):
 
 class DataInserter:
 
-    def __init__(self, data, disable_all=False, max_tries=10):
+    def __init__(self, data, selenium_url, disable_all=False, max_tries=10):
         self.data = data
         self.driver = None
-        self.max_tries = max_tries
         self.disable_all = disable_all
         self.logged_in = False
-
-    def navigate_to_page(self):
-        sport_db_url = 'https://www.sportdb.ch'
-
-        logger.debug('Navigating to %s', sport_db_url)
+        self.is_remote = True
 
         try:
             self.driver = webdriver.Firefox()
+            self.is_remote = False
         except WebDriverException as e:
             logger.info('Could not run firefox locally. Switching to remote option. Error message: ' + str(e))
 
             n_tries = 0
+            logger.info("Connecting to selenium at " + selenium_url)
             while self.driver is None:
                 try:
-                    self.driver = webdriver.Remote("http://localhost:4444/wd/hub", DesiredCapabilities.FIREFOX)
-                    logger.info('Successfully opened sportdb')
+                    self.driver = webdriver.Remote(selenium_url, DesiredCapabilities.FIREFOX)
+                    logger.info('Successfully connected to selenium')
                 except MaxRetryError:
                     n_tries += 1
-                    logger.warning('Remote webdriver is not running yet ({}/{})...'.format(n_tries, self.max_tries))
-                    if n_tries >= self.max_tries:
+                    logger.warning('Remote webdriver is not running yet ({}/{})...'.format(n_tries, max_tries))
+                    if n_tries >= max_tries:
                         raise Exception('Remote webdriver does not seem to be running...')
                     else:
-                        time.sleep(2)
+                        time.sleep(1)
 
+    def navigate_to_page(self):
+        sport_db_url = 'https://www.sportdb.ch'
+        logger.debug('Navigating to %s', sport_db_url)
         self.driver.get(sport_db_url)
         logger.debug('Navigated to %s', sport_db_url)
 
@@ -193,28 +193,29 @@ class DataInserter:
             self.driver.close()
 
 
-def run(data_file, username, password, course_id, disable_all):
+def run(data_file, username, password, course_id, disable_all, selenium_url, test):
     logger.debug("Running...")
 
     # parse data
     data = parse_data(data_file)
 
     # navigate
-    ins = DataInserter(data, disable_all)
+    ins = DataInserter(data, selenium_url, disable_all)
     ins.navigate_to_page()
     ins.login(username, password)
     ins.to_awk(course_id)
 
-    # enter data
-    while True:
-        logger.info('Entering data...')
-        ins.enter_data()
-        logger.info('Entered data. Going to previous page...')
-        more = ins.to_previous()
-        if not more:
-            break
+    if not test:
+        # enter data
+        while True:
+            logger.info('Entering data...')
+            ins.enter_data()
+            logger.info('Entered data. Going to previous page...')
+            more = ins.to_previous()
+            if not more:
+                break
     
-    logger.info("Einträge vollständig. Keine Garantie für Korrektheit, bitte Daten überprüfen. Vergiss nicht, den Kurs noch abzuschliessen.")
+        logger.info("Einträge vollständig. Keine Garantie für Korrektheit, bitte Daten überprüfen. Vergiss nicht, den Kurs noch abzuschliessen.")
 
 
 if __name__ == "__main__":
@@ -230,6 +231,11 @@ if __name__ == "__main__":
                         help='Kurs ID (z.B. 1234567). Kann aus der URL der Anwesenheitskontrolle abgelesen werden. Wenn nicht angegeben, wirst du interaktiv angefragt, zur korrekten Anwesenheitskontrolle zu navigieren.')
     parser.add_argument('--disable-all', dest='disable_all', action='store_true', default=False,
                         help='Deaktiviere die Anwesenheit für alle Personen und Daten im File.')
+    parser.add_argument('--test', action='store_true', default=False,
+                        help='Nur Login&Logout.')
+    parser.add_argument('--selenium-url', default="http://selenium:4444/wd/hub",
+                        help='URL unter der Selenium erreicht werden kann.')
+
     args = parser.parse_args()
 
     if args.password is None:
@@ -237,6 +243,6 @@ if __name__ == "__main__":
     else:
         password = args.password
 
-    run(args.data_file, args.username, password, args.course_id, args.disable_all)
+    run(args.data_file, args.username, password, args.course_id, args.disable_all, args.selenium_url, args.test)
 
 

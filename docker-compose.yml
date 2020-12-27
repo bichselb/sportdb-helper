@@ -1,0 +1,22 @@
+version: '2.4'
+services:
+  selenium:
+    image: selenium/standalone-firefox:4.0.0-beta-1-prerelease-20201208
+    ports:
+      - "5901:5900" # port for vnc (host:container)
+    expose:
+      - "4444"
+    healthcheck:
+      test: "opt/bin/check-grid.sh" # allow waiting until started
+    environment:
+      - VNC_NO_PASSWORD=1 # disable vnc password
+    volumes:
+      - /dev/shm:/dev/shm # known workaround suggested by selenium
+  sportdb-helper:
+    build: .
+    #ports:
+    #  - "4444:4444" # port of selenium
+    depends_on:
+      selenium:
+        condition: service_healthy # wait until selenium is ready
+    container_name: sportdb-helper-container

@@ -1,23 +1,11 @@
-FROM selenium/standalone-firefox-debug
-
-USER root
-
-RUN apt-get update && apt-get install -y \
-		python3 \
-		python3-pip \
-	&& apt-get clean && rm -rf /var/lib/apt/lists/*
-
-USER seluser
+FROM python:3.8
 
 RUN pip3 install \
-	selenium \
-	pandas \
-	xlrd
-
-# automatically start
-RUN mkdir -p /home/seluser/logs
-RUN echo "/opt/bin/entry_point.sh > /home/seluser/logs/$(date +%Y-%m-%d_%H-%M-%S).log &" >> /home/seluser/.bashrc
+	selenium==3.141.0 \
+	pandas==1.1.5 \
+	xlrd==2.0.1
 
 WORKDIR "/sportdb-helper"
-COPY --chown=seluser . .
+COPY . .
+
 ENTRYPOINT ["python3", "./code/insert_data.py"]

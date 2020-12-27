@@ -7,6 +7,9 @@
 # For a list of possible arguments, run
 # $ ./run.sh --help
 
+# enable bash strict mode
+set -eu
+
 BASEDIR="$( dirname "$0")"
 
 last="${@:$#}" # last parameter
@@ -20,15 +23,26 @@ fi
 
 cd "$BASEDIR"
 
-# enable display forwarding for selenium
-# https://stackoverflow.com/questions/25281992/alternatives-to-ssh-x11-forwarding-for-docker-containers
-xhost +si:localuser:$USER
+# prepare graceful exit
+function finish {
+	sudo docker-compose down
+}
+trap finish EXIT
 
-sudo docker run \
+
+# build
+sudo docker-compose build
+# start selenium
+sudo docker-compose up --detach selenium
+sleep 3
+
+# start vnc (ignore errors)
+echo "Starting vnc client"
+vinagre 127.0.0.1:5901 2>/dev/null || true &
+
+# run sportdb-helper
+sudo docker-compose run \
     --rm \
-    -it \
     --name sportdb-helper-container \
-    -e DISPLAY=$DISPLAY \
-    -v /tmp/.X11-unix:/tmp/.X11-unix:ro \
     -v $(pwd)/data:/sportdb-helper/data \
     sportdb-helper $last $other
