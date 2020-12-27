@@ -37,7 +37,7 @@ sudo docker-compose up --detach selenium
 sleep 3
 
 # start vnc (ignore errors)
-echo "Starting vnc client"
+echo "Starting vnc client (errors will be ignored)"
 vinagre 127.0.0.1:5901 2>/dev/null || true &
 
 # run sportdb-helper
