@@ -33,7 +33,7 @@ Um SportDB Helfer zu verwenden, brauchst du
 
 ```bash
 # git
-sudo apt-get install git-all
+sudo apt-get install git-all --yes
 # optional: vnc client, um den Prozess live zu beobachten
 sudo apt-get install vinagre --yes
 ```
