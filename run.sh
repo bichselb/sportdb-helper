@@ -34,7 +34,8 @@ trap finish EXIT
 sudo docker-compose build
 # start selenium
 sudo docker-compose up --detach selenium
-sleep 3
+echo "Waiting for selenium to fully start..."
+sleep 10
 
 # start vnc (ignore errors)
 echo "Starting vnc client (errors will be ignored)"

@@ -139,7 +139,8 @@ class DataInserter:
         # enter data
         logger.debug('Entering data...')
         for column in self.data:
-            date = column.to_pydatetime().strftime('%d.%m.%Y')
+            # removed: column.to_pydatetime()
+            date = column.strftime('%d.%m.%Y')
             for key, val in self.data[column].iteritems():
                 js_id = key[0]
                 last_name = key[1]
@@ -215,7 +216,7 @@ def run(data_file, username, password, course_id, disable_all, selenium_url, tes
             if not more:
                 break
     
-        logger.info("Einträge vollständig. Keine Garantie für Korrektheit, bitte Daten überprüfen. Vergiss nicht, den Kurs noch abzuschliessen.")
+        logger.info("Einträge vollständig. Keine Garantie für Korrektheit, bitte Daten überprüfen. Vergiss nicht, den Kurs noch abzuschliessen (unter \"Checkliste Kurs\").")
 
 
 if __name__ == "__main__":
